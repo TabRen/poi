@@ -1,6 +1,8 @@
 package com.tab.tools.Excel;
 
 import java.io.FileInputStream;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,6 +13,7 @@ import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -20,8 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Excel
- * Created by tab.ren on 2018/7/17.
+ * Excel Created by tab.ren on 2018/7/17.
  */
 public class Excel {
 
@@ -65,16 +67,15 @@ public class Excel {
         while (iterator.hasNext()) {
           HSSFCell cell = (HSSFCell) iterator.next();
           if (hasHead) {
-            //有表头的是情况
+            //有表头的情况
             if (row.getRowNum() == 0) {
-              head.put(cell.getColumnIndex(), cell.getStringCellValue());
+              head.put(cell.getColumnIndex(), getCellStringValue(cell, excel));
             } else {
-              map.put(head.get(cell.getColumnIndex()), cell.getStringCellValue());
+              map.put(head.get(cell.getColumnIndex()), getCellStringValue(cell, excel));
             }
-
           } else {
             //没有表头的情况
-            map.put(row.getRowNum() + "-" + cell.getColumnIndex(), cell.getStringCellValue());
+            map.put(row.getRowNum() + "-" + cell.getColumnIndex(), getCellStringValue(cell, excel));
           }
         }
         if (hasHead && (row.getRowNum() == 0)) {
@@ -107,14 +108,13 @@ public class Excel {
           if (hasHead) {
             //有表头的是情况
             if (row.getRowNum() == 0) {
-              head.put(cell.getColumnIndex(), cell.getStringCellValue());
+              head.put(cell.getColumnIndex(), getCellStringValue(cell, excel));
             } else {
-              map.put(head.get(cell.getColumnIndex()), cell.getStringCellValue());
+              map.put(head.get(cell.getColumnIndex()), getCellStringValue(cell, excel));
             }
-
           } else {
             //没有表头的情况
-            map.put(row.getRowNum() + "-" + cell.getColumnIndex(), cell.getStringCellValue());
+            map.put(row.getRowNum() + "-" + cell.getColumnIndex(), getCellStringValue(cell, excel));
           }
         }
         if (hasHead && (row.getRowNum() == 0)) {
@@ -123,8 +123,91 @@ public class Excel {
         readXlsxForList.add(map);
       }
     } catch (Exception e) {
+      readXlsxForList.clear();
       logger.error("Excel readXlsxForList occur exception: {}", e);
     }
     return readXlsxForList;
+  }
+
+  private String getCellStringValue(HSSFCell cell, HSSFWorkbook workbook) {
+    if (null != cell) {
+      //判断数据的类型
+      switch (cell.getCellTypeEnum()) {
+        case NUMERIC:
+          if ((cell.getColumnIndex() == 19) || (cell.getColumnIndex() == 20) || (
+              cell.getColumnIndex() == 21)) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+            return sdf.format(cell.getDateCellValue());
+          } else {
+            DecimalFormat df = new DecimalFormat("0");
+            return df.format(cell.getNumericCellValue());
+          }
+        case STRING:
+          return cell.getStringCellValue();
+        case BOOLEAN:
+          return String.valueOf(cell.getBooleanCellValue());
+        case FORMULA:
+          //公式
+          if ((cell.getColumnIndex() == 19) || (cell.getColumnIndex() == 20) || (
+              cell.getColumnIndex() == 21)) {
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            evaluator.evaluateInCell(cell);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+            return sdf.format(cell.getDateCellValue());
+          } else {
+            return cell.getCellFormula();
+          }
+        case BLANK:
+          //空值
+          return "";
+        case ERROR:
+          return "非法字符";
+        default:
+          return "未知类型";
+      }
+    }
+    logger.info("ReadExcelServiceImpl getCellStringValue cell is null");
+    return "";
+  }
+
+  private String getCellStringValue(XSSFCell cell, XSSFWorkbook workbook) {
+    if (null != cell) {
+      //判断数据的类型
+      switch (cell.getCellTypeEnum()) {
+        case NUMERIC:
+          if ((cell.getColumnIndex() == 19) || (cell.getColumnIndex() == 20) || (
+              cell.getColumnIndex() == 21)) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+            return sdf.format(cell.getDateCellValue());
+          } else {
+            DecimalFormat df = new DecimalFormat("0");
+            return df.format(cell.getNumericCellValue());
+          }
+        case STRING:
+          return cell.getStringCellValue();
+        case BOOLEAN:
+          return String.valueOf(cell.getBooleanCellValue());
+        case FORMULA:
+          //公式
+          if ((cell.getColumnIndex() == 19) || (cell.getColumnIndex() == 20) || (
+              cell.getColumnIndex() == 21)) {
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            evaluator.evaluateInCell(cell);
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
+            return sdf.format(cell.getDateCellValue());
+          } else {
+            return cell.getCellFormula();
+          }
+        case BLANK:
+          //空值
+          return "";
+        case ERROR:
+          return "非法字符";
+        default:
+          return "未知类型";
+      }
+    }
+    logger.info("ReadExcelServiceImpl getCellStringValue cell is null");
+    return "";
   }
 }
